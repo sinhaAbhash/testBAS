@@ -1,0 +1,94 @@
+_schema-version: "3.2"
+ID: bas-testbas
+description: A Fiori application.
+version: 0.0.1
+modules:
+- name: bas-testbas-dest-content
+  type: com.sap.application.content
+  requires:
+  - name: bas-testbas-dest-srv
+    parameters:
+      content-target: true
+  - name: bas-testbas-repo-host
+    parameters:
+      service-key:
+        name: bas-testbas-repo-host-key
+  - name: bas-testbas-uaa
+    parameters:
+      service-key:
+        name: bas-testbas-uaa-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: bas-testbas_repo_host
+          ServiceInstanceName: bas-testbas-html5-srv
+          ServiceKeyName: bas-testbas-repo-host-key
+          sap.cloud.service: bas-testbas
+        - Authentication: OAuth2UserTokenExchange
+          Name: bas-testbas_uaa
+          ServiceInstanceName: bas-testbas-xsuaa-srv
+          ServiceKeyName: bas-testbas-uaa-key
+          sap.cloud.service: bas-testbas
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+- name: bas-testbas-app-content
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: bas-testbas-repo-host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - bastestbas.zip
+      name: bastestbas
+      target-path: resources/
+- name: bastestbas
+  type: html5
+  path: .
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+resources:
+- name: bas-testbas-dest-srv
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          existing_destinations_policy: update
+      version: 1.0.0
+    service: destination
+    service-name: bas-testbas-dest-srv
+    service-plan: lite
+- name: bas-testbas-uaa
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: bas-testbas-xsuaa-srv
+    service-plan: application
+- name: bas-testbas-repo-host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: bas-testbas-html5-srv
+    service-plan: app-host
+parameters:
+  deploy_mode: html5-repo
+  enable-parallel-deployments: true
